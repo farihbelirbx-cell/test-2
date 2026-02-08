@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createConsumer } from "@rails/actioncable";
 
+// Environment variables - fallback ke localhost untuk development
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/cable";
 
@@ -32,6 +33,7 @@ export default function Home() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loginMode, setLoginMode] = useState<"input" | "dropdown">("input"); // 🆕 Mode login
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
@@ -119,6 +121,34 @@ export default function Home() {
   }, [activeRoom, currentUser]);
 
   /* ========================= AUTH ========================= */
+  
+  // 🆕 Login dengan Input (Real API)
+  async function handleLoginInput() {
+    if (!username.trim()) {
+      setError("Username is required");
+      return;
+    }
+
+    setError("");
+
+    const res = await fetch(`${API_URL}/api/users/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username.trim() }),
+    });
+
+    if (res.ok) {
+      const user = await res.json();
+      localStorage.setItem("chatUser", JSON.stringify(user));
+      setCurrentUser(user);
+      setUsername("");
+    } else {
+      const errorData = await res.json();
+      setError(errorData.error || "Login failed");
+    }
+  }
+
+  // Login dengan Dropdown (Testing)
   function handleLoginDropdown(userId: number) {
     const user = allUsers.find((u) => u.id === userId);
     if (user) {
@@ -222,10 +252,11 @@ export default function Home() {
                 setError("");
                 setUsername("");
               }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${isLogin
-                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                : "bg-slate-700 text-slate-400"
-                }`}
+              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
+                isLogin
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                  : "bg-slate-700 text-slate-400"
+              }`}
             >
               Login
             </button>
@@ -235,10 +266,11 @@ export default function Home() {
                 setError("");
                 setUsername("");
               }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${!isLogin
-                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                : "bg-slate-700 text-slate-400"
-                }`}
+              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
+                !isLogin
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                  : "bg-slate-700 text-slate-400"
+              }`}
             >
               Register
             </button>
@@ -252,31 +284,94 @@ export default function Home() {
           )}
 
           {isLogin ? (
-            // ================= LOGIN TAB (Dropdown) =================
+            // ================= LOGIN TAB =================
             <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Select User (for testing)
-              </label>
-              <select
-                onChange={(e) => handleLoginDropdown(Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  -- Choose User --
-                </option>
-                {allUsers.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.username}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-500 mt-2">
-                Quick login for testing/demo purposes
-              </p>
+              {/* 🆕 Toggle Login Mode */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => {
+                    setLoginMode("input");
+                    setError("");
+                    setUsername("");
+                  }}
+                  className={`flex-1 py-1.5 text-sm rounded-md transition-all ${
+                    loginMode === "input"
+                      ? "bg-blue-600/30 text-blue-300 border border-blue-500"
+                      : "bg-slate-700/50 text-slate-400"
+                  }`}
+                >
+                  📝 Input
+                </button>
+                <button
+                  onClick={() => {
+                    setLoginMode("dropdown");
+                    setError("");
+                    setUsername("");
+                  }}
+                  className={`flex-1 py-1.5 text-sm rounded-md transition-all ${
+                    loginMode === "dropdown"
+                      ? "bg-blue-600/30 text-blue-300 border border-blue-500"
+                      : "bg-slate-700/50 text-slate-400"
+                  }`}
+                >
+                  🧪 Test
+                </button>
+              </div>
+
+              {loginMode === "input" ? (
+                // ================= LOGIN INPUT MODE =================
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">
+                    Username
+                  </label>
+                  <input
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="Enter your username..."
+                    className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                    onKeyDown={(e) => e.key === "Enter" && handleLoginInput()}
+                  />
+                  <button
+                    onClick={handleLoginInput}
+                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all"
+                  >
+                    Login
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Enter your registered username
+                  </p>
+                </div>
+              ) : (
+                // ================= LOGIN DROPDOWN MODE (TESTING) =================
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">
+                    Select User (for testing)
+                  </label>
+                  <select
+                    onChange={(e) => handleLoginDropdown(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      -- Choose User --
+                    </option>
+                    {allUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.username}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Quick login for testing/demo purposes
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
-            // ================= REGISTER TAB (Input) =================
+            // ================= REGISTER TAB =================
             <div>
               <label className="block text-sm text-slate-400 mb-2">
                 Username
@@ -332,10 +427,11 @@ export default function Home() {
             <button
               key={room.room_id}
               onClick={() => setActiveRoom(room)}
-              className={`w-full px-5 py-4 text-left transition-all duration-200 border-b border-slate-800 ${activeRoom?.room_id === room.room_id
-                ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-l-4 border-l-blue-500"
-                : "hover:bg-slate-800/50"
-                }`}
+              className={`w-full px-5 py-4 text-left transition-all duration-200 border-b border-slate-800 ${
+                activeRoom?.room_id === room.room_id
+                  ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-l-4 border-l-blue-500"
+                  : "hover:bg-slate-800/50"
+              }`}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
@@ -415,15 +511,17 @@ export default function Home() {
                     className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg ${isMe
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm"
-                        : "bg-slate-700 text-white rounded-bl-sm"
-                        }`}
+                      className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg ${
+                        isMe
+                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm"
+                          : "bg-slate-700 text-white rounded-bl-sm"
+                      }`}
                     >
                       <div className="break-words">{msg.content}</div>
                       <div
-                        className={`text-xs mt-1 ${isMe ? "text-blue-100" : "text-slate-400"
-                          }`}
+                        className={`text-xs mt-1 ${
+                          isMe ? "text-blue-100" : "text-slate-400"
+                        }`}
                       >
                         {new Date(msg.created_at).toLocaleTimeString([], {
                           hour: "2-digit",

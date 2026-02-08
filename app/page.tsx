@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createConsumer } from "@rails/actioncable";
 
-const API_URL = "http://localhost:3000";
-const WS_URL = "ws://localhost:3000/cable";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000/cable";
 
 type User = {
   id: number;
@@ -223,8 +223,8 @@ export default function Home() {
                 setUsername("");
               }}
               className={`flex-1 py-2 rounded-lg font-semibold transition-all ${isLogin
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                  : "bg-slate-700 text-slate-400"
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                : "bg-slate-700 text-slate-400"
                 }`}
             >
               Login
@@ -236,8 +236,8 @@ export default function Home() {
                 setUsername("");
               }}
               className={`flex-1 py-2 rounded-lg font-semibold transition-all ${!isLogin
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                  : "bg-slate-700 text-slate-400"
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                : "bg-slate-700 text-slate-400"
                 }`}
             >
               Register
@@ -333,8 +333,8 @@ export default function Home() {
               key={room.room_id}
               onClick={() => setActiveRoom(room)}
               className={`w-full px-5 py-4 text-left transition-all duration-200 border-b border-slate-800 ${activeRoom?.room_id === room.room_id
-                  ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-l-4 border-l-blue-500"
-                  : "hover:bg-slate-800/50"
+                ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-l-4 border-l-blue-500"
+                : "hover:bg-slate-800/50"
                 }`}
             >
               <div className="flex items-center gap-3">
@@ -416,8 +416,8 @@ export default function Home() {
                   >
                     <div
                       className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg ${isMe
-                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm"
-                          : "bg-slate-700 text-white rounded-bl-sm"
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm"
+                        : "bg-slate-700 text-white rounded-bl-sm"
                         }`}
                     >
                       <div className="break-words">{msg.content}</div>

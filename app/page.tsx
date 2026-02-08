@@ -42,6 +42,7 @@ export default function Home() {
 
   const cableRef = useRef<any>(null);
   const subscriptionRef = useRef<any>(null);
+  const userSubscriptionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll
@@ -71,6 +72,30 @@ export default function Home() {
     cableRef.current = createConsumer(WS_URL);
     return () => {
       cableRef.current?.disconnect();
+    };
+  }, [currentUser]);
+
+  // Subscribe to UserChannel untuk update sidebar
+  useEffect(() => {
+    if (!currentUser || !cableRef.current) return;
+
+    userSubscriptionRef.current = cableRef.current.subscriptions.create(
+      {
+        channel: "UserChannel",
+        user_id: currentUser.id,
+      },
+      {
+        received(data: any) {
+          console.log("🔔 User notification:", data);
+          if (data.type === 'room_update') {
+            refreshRooms();
+          }
+        },
+      }
+    );
+
+    return () => {
+      userSubscriptionRef.current?.unsubscribe();
     };
   }, [currentUser]);
 
@@ -121,7 +146,7 @@ export default function Home() {
   }, [activeRoom, currentUser]);
 
   /* ========================= AUTH ========================= */
-  
+
   // 🆕 Login dengan Input (Real API)
   async function handleLoginInput() {
     if (!username.trim()) {
@@ -252,11 +277,10 @@ export default function Home() {
                 setError("");
                 setUsername("");
               }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                isLogin
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                  : "bg-slate-700 text-slate-400"
-              }`}
+              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${isLogin
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                : "bg-slate-700 text-slate-400"
+                }`}
             >
               Login
             </button>
@@ -266,11 +290,10 @@ export default function Home() {
                 setError("");
                 setUsername("");
               }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${
-                !isLogin
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                  : "bg-slate-700 text-slate-400"
-              }`}
+              className={`flex-1 py-2 rounded-lg font-semibold transition-all ${!isLogin
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
+                : "bg-slate-700 text-slate-400"
+                }`}
             >
               Register
             </button>
@@ -294,11 +317,10 @@ export default function Home() {
                     setError("");
                     setUsername("");
                   }}
-                  className={`flex-1 py-1.5 text-sm rounded-md transition-all ${
-                    loginMode === "input"
-                      ? "bg-blue-600/30 text-blue-300 border border-blue-500"
-                      : "bg-slate-700/50 text-slate-400"
-                  }`}
+                  className={`flex-1 py-1.5 text-sm rounded-md transition-all ${loginMode === "input"
+                    ? "bg-blue-600/30 text-blue-300 border border-blue-500"
+                    : "bg-slate-700/50 text-slate-400"
+                    }`}
                 >
                   📝 Input
                 </button>
@@ -308,11 +330,10 @@ export default function Home() {
                     setError("");
                     setUsername("");
                   }}
-                  className={`flex-1 py-1.5 text-sm rounded-md transition-all ${
-                    loginMode === "dropdown"
-                      ? "bg-blue-600/30 text-blue-300 border border-blue-500"
-                      : "bg-slate-700/50 text-slate-400"
-                  }`}
+                  className={`flex-1 py-1.5 text-sm rounded-md transition-all ${loginMode === "dropdown"
+                    ? "bg-blue-600/30 text-blue-300 border border-blue-500"
+                    : "bg-slate-700/50 text-slate-400"
+                    }`}
                 >
                   🧪 Test
                 </button>
@@ -427,11 +448,10 @@ export default function Home() {
             <button
               key={room.room_id}
               onClick={() => setActiveRoom(room)}
-              className={`w-full px-5 py-4 text-left transition-all duration-200 border-b border-slate-800 ${
-                activeRoom?.room_id === room.room_id
-                  ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-l-4 border-l-blue-500"
-                  : "hover:bg-slate-800/50"
-              }`}
+              className={`w-full px-5 py-4 text-left transition-all duration-200 border-b border-slate-800 ${activeRoom?.room_id === room.room_id
+                ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-l-4 border-l-blue-500"
+                : "hover:bg-slate-800/50"
+                }`}
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
@@ -511,17 +531,15 @@ export default function Home() {
                     className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg ${
-                        isMe
-                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm"
-                          : "bg-slate-700 text-white rounded-bl-sm"
-                      }`}
+                      className={`max-w-xs px-4 py-3 rounded-2xl shadow-lg ${isMe
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-sm"
+                        : "bg-slate-700 text-white rounded-bl-sm"
+                        }`}
                     >
                       <div className="break-words">{msg.content}</div>
                       <div
-                        className={`text-xs mt-1 ${
-                          isMe ? "text-blue-100" : "text-slate-400"
-                        }`}
+                        className={`text-xs mt-1 ${isMe ? "text-blue-100" : "text-slate-400"
+                          }`}
                       >
                         {new Date(msg.created_at).toLocaleTimeString([], {
                           hour: "2-digit",
